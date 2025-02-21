@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    volumes:
+      - ./cache:/app/cache
+      - ./stats.json:/app/stats.json
+      - ./error_log.txt:/app/error_log.txt
+    env_file:
+      - .env
+    restart: always

@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+cache/
+error_log.txt
+stats.json
