@@ -10,3 +10,9 @@ services:
     env_file:
       - .env
     restart: always
+    secrets:
+      - telegram_bot_token
+
+secrets:
+  telegram_bot_token:
+    file: .env

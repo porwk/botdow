@@ -140,18 +140,28 @@ async def download_video(platform: str, url: str, quality: str) -> Optional[str]
 
 async def download_youtube_video(url: str, quality: str) -> Optional[str]:
     try:
-        yt = YouTube(url)
+        # Adicionar headers para simular um navegador
+        yt = YouTube(url, use_oauth=True, allow_oauth_cache=True)
+        
+        # Tentar obter o stream com a qualidade solicitada
         stream = yt.streams.filter(progressive=True, file_extension="mp4", resolution=quality).first()
+        
+        # Se não encontrar a qualidade desejada, tentar encontrar a melhor qualidade disponível
         if not stream:
-            stream = yt.streams.filter(progressive=True, file_extension="mp4").first()
+            logger.info(f"Qualidade {quality} não disponível. Buscando melhor qualidade disponível.")
+            stream = yt.streams.filter(progressive=True, file_extension="mp4").order_by('resolution').desc().first()
         
         if stream:
-            file_path = f"/tmp/youtube_video_{quality}.mp4"
-            stream.download(output_path="/tmp", filename=f"youtube_video_{quality}.mp4")
+            file_path = f"/tmp/youtube_video_{int(time.time())}.mp4"  # Nome único para evitar conflitos
+            stream.download(output_path="/tmp", filename=os.path.basename(file_path))
+            logger.info(f"Vídeo baixado com sucesso: {file_path}")
             return file_path
+            
+        logger.error("Nenhum stream disponível para download")
         return None
+        
     except Exception as e:
-        logger.error(f"Erro ao baixar vídeo do YouTube: {e}")
+        logger.error(f"Erro ao baixar vídeo do YouTube: {str(e)}\nTraceback: {traceback.format_exc()}")
         return None
 
 async def download_instagram_video(url: str, quality: str) -> Optional[str]:
@@ -200,7 +210,7 @@ async def handle_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     /queue - Ver status da fila de downloads
     /help - Mostrar esta mensagem de ajuda
     
-    ⚠️ Limite máximo de arquivo: 50MB
+    ⚠️ Limite máximo de arquivo: 200MB
     ⏱️ Limite de uso: 5 downloads por minuto
     
     📦 Os vídeos são armazenados em cache por 24 horas
