@@ -1,25 +1,15 @@
-FROM python:3.9-slim
+FROM python:3.9
 
 WORKDIR /app
 
-# Instalar dependências do sistema
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar arquivos necessários
+# Copiar primeiro os requisitos para aproveitar o cache do Docker
 COPY requirements.txt .
-COPY botdown.py .
-COPY stats.json .
-COPY error_log.txt .
+RUN pip install -r requirements.txt
 
-# Criar diretório de cache
-RUN mkdir cache
+# Copiar todo o código do projeto
+COPY . .
 
-# Instalar dependências Python
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Definir variáveis de ambiente
-ENV TELEGRAM_BOT_TOKEN=""
+# Se necessário, dar permissões para a pasta lib
+RUN chmod -R 755 /app/lib
 
 CMD ["python", "botdown.py"]

@@ -60,7 +60,7 @@ async def download_youtube_video(url: str, quality: str) -> Optional[str]:
         logger.error(f"Erro ao baixar vídeo do YouTube: {str(e)}\nTraceback: {traceback.format_exc()}")
         return None
 
-async def download_instagram_video(url: str, quality: str) -> Optional[str]:
+async def _download_instagram_video_internal(url: str, quality: str) -> Optional[str]:
     try:
         L = instaloader.Instaloader()
         post = instaloader.Post.from_url(L.context, url)
@@ -91,3 +91,6 @@ async def download_tiktok_video(url: str, quality: str) -> Optional[str]:
     except Exception as e:
         logger.error(f"Erro ao baixar vídeo do TikTok: {e}")
         return None
+
+def download_instagram_video(url: str, quality: str = None) -> None:
+    raise DeprecationWarning("Use download_video('instagram', url, quality) instead")
