@@ -275,6 +275,58 @@ async def handle_queue(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"- Disponível: {MAX_QUEUE_SIZE - queue_size}"
     )
 
+# Função para lidar com comando /stats
+async def handle_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    stats = stats_manager.get_stats()
+    stats_text = f"""
+    📊 *Estatísticas do Bot*
+    
+    Total de downloads: {stats['downloads']}
+    
+    Downloads por plataforma:
+    - YouTube: {stats['platforms'].get('youtube', 0)}
+    - Instagram: {stats['platforms'].get('instagram', 0)}
+    - TikTok: {stats['platforms'].get('tiktok', 0)}
+    
+    Usuários ativos: {len(stats['users'])}
+    """
+    await update.message.reply_text(stats_text, parse_mode='Markdown')
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    platform, url, quality = query.data.split("|")
+    
+    await query.answer()
+    await query.edit_message_text("⏳ Baixando vídeo... Por favor, aguarde.")
+    
+    if download_queue.qsize() >= MAX_QUEUE_SIZE:
+        await query.edit_message_text("❌ Fila de downloads cheia. Tente novamente mais tarde.")
+        return
+        
+    # Verificar limite de taxa
+    user_id = update.effective_user.id
+    current_time = time.time()
+    rate_limit_dict[user_id] = [t for t in rate_limit_dict[user_id] if current_time - t < RATE_LIMIT_PERIOD]
+    
+    if len(rate_limit_dict[user_id]) >= RATE_LIMIT:
+        await query.edit_message_text("⚠️ Limite de downloads atingido. Aguarde um minuto.")
+        return
+    
+    rate_limit_dict[user_id].append(current_time)
+    
+    try:
+        file_path = await download_video(platform, url, quality)
+        
+        if file_path and check_file_size(file_path):
+            cached_path = save_to_cache(url, file_path)
+            await query.message.reply_video(video=open(cached_path, 'rb'))
+            stats_manager.update_stats(user_id, platform)
+        else:
+            await query.edit_message_text("❌ Erro: Arquivo muito grande ou download falhou. Tente outro vídeo.")
+    except Exception as e:
+        log_error(e, user_id, f"download_{platform}")
+        await query.edit_message_text("❌ Ocorreu um erro durante o download. Tente novamente.")
+
 # Função principal para iniciar o bot
 def main() -> None:
     token = os.getenv("TELEGRAM_BOT_TOKEN")
