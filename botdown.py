@@ -19,4 +19,24 @@ async def download_video(platform: str, url: str, quality: str) -> Optional[str]
         logger.error(f"Erro ao baixar vídeo: {e}")
         return None
 
+async def handle_instagram(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        url = extract_url(update.message.text)
+        if not url:
+            await update.message.reply_text("Por favor, envie um link válido do Instagram.")
+            return
+            
+        # Corrigindo a chamada da função: adicionando await e o parâmetro quality
+        file_path = await download_instagram_video(url, "high")  # Versão 1
+        # OU
+        # file_path = await download_video("instagram", url, "high")  # Versão 2 (recomendada)
+        
+        if file_path:
+            await send_video(update, context, file_path)
+        else:
+            await update.message.reply_text("Não foi possível baixar o vídeo.")
+    except Exception as e:
+        logger.error(f"Erro ao processar vídeo do Instagram: {e}")
+        await update.message.reply_text("Ocorreu um erro ao processar o vídeo.")
+
 // ... existing code ...
